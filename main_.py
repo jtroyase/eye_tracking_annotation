@@ -20,15 +20,22 @@ image.start()
 eye_tracker = gaze_.EyeTracker()
 
 # --------------------- Voice recognizer thread --------------------------
+
+# Some configuration values:
+index_microphone = 1
+frequency_adjust_ambient_noise = 10 #seconds
+
 # Initialize microphone
 r = sr.Recognizer()
-mic = sr.Microphone()
+mic = sr.Microphone(index_microphone)
+logging.info(f"Main        : using microphone: {sr.Microphone.list_microphone_names()[index_microphone]}")
+
 # adjust for ambient noise
 logging.info("Main        : start adjusting for ambient noise")
 with mic as source:
     r.adjust_for_ambient_noise(source, duration=1)
-    r.dynamic_energy_threshold = True
-    #r.pause_threshold = 0.3
+
+last_ambient_noise_measurement = time.time()
 
 logging.info("Main:       : Adjusted for ambient noise")
 
@@ -52,10 +59,20 @@ def callback_listen(recognizer, audio):
 
 # Start listening in the background
 logging.info("Main        : Before the voice recognition thread")
-stop_on = r.listen_in_background(mic, callback_listen)
+stop_on = r.listen_in_background(mic, callback_listen, phrase_time_limit=3)
 
 # ------------------ Run program until user ends it -----------------------
 while True:
-    time.sleep(1)
+    # Perform ambient noise adjustments in a determined frequency
+    if abs(time.time() - last_ambient_noise_measurement) > frequency_adjust_ambient_noise:
+        logging.info("Main        : start adjusting for ambient noise in the loop")
+        
+        r.adjust_for_ambient_noise(source, duration=0.5)
+
+        logging.info("Main:       : Adjusted for ambient noise in the loop")
+        
+        last_ambient_noise_measurement = time.time()
+    else:
+        time.sleep(10)
 
 logging.info("Main        : end script")

@@ -7,8 +7,6 @@ def obtain_image():
 
     video = cv2.VideoCapture(0)
 
-    output = []
-
     frame_number = 0
     while True:
         ret, frame = video.read()
